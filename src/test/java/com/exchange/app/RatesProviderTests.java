@@ -13,6 +13,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 
@@ -93,11 +94,10 @@ class RatesProviderTests {
 
         RatesProvider provider = new RatesProvider(apiClient);
 
-        //when
-        Double rate = provider.getExchangeRate(Currency.getInstance(SEK), Currency.getInstance("CAD"));
-
         //then
-        assertThat(10.30).isEqualTo(rate);
+        assertThatThrownBy(() -> {
+            provider.getExchangeRate(Currency.getInstance(SEK), Currency.getInstance("CAD"));
+        }).hasMessage("Not supported: CAD");
     }
 
     @Test
