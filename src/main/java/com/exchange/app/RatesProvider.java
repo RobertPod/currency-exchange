@@ -44,7 +44,8 @@ public class RatesProvider {
 
         return exchangeRateses.stream().collect(Collectors
             .toMap(ExchangeRates::getDate,
-                exchangeRates -> exchangeRates.get(requested.getCurrencyCode()), (a, b) -> b,
+                exchangeRates -> exchangeRates.get(requested.getCurrencyCode()),
+                (a, b) -> b,
                 TreeMap::new));
     }
 }

@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.times;
 
 class RatesProviderTests {
 
@@ -132,6 +133,28 @@ class RatesProviderTests {
         //then
         Mockito.verify(apiClient).getLatestRates();
     }
+
+//    ====
+    @Test
+    void shouldGetHistoricalRatesOnlyOnce(){
+        //given
+        ForeignExchangeRatesApiClient apiClient = Mockito.mock(ForeignExchangeRatesApiClient.class);
+        ExchangeRates exchangeRates = initializeExchangeRates();
+        Mockito.when(apiClient.getHistoricalRates(DateTime.now().minusDays(7), DateTime.now())).
+            thenReturn(new ArrayList<ExchangeRates>());
+
+        RatesProvider provider = new RatesProvider(apiClient);
+
+        //when
+        provider.getExchangeRateListInEUR(Currency.getInstance(SEK), DateTime.now().minusDays(7),
+            DateTime.now());
+        provider.getExchangeRateListInEUR(Currency.getInstance(SEK), DateTime.now().minusDays(3),
+            DateTime.now());
+
+        //then
+        Mockito.verify(apiClient, times(1)).getHistoricalRates(any(), any());
+    }
+//    ====
 
     private ExchangeRates initializeExchangeRates() {
         rates.put(USD, 1.22);
