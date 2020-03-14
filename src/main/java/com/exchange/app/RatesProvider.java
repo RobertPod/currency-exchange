@@ -1,13 +1,10 @@
 package com.exchange.app;
 
-import java.util.ArrayList;
 import java.util.Currency;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.joda.time.DateTime;
 
 public class RatesProvider {
@@ -30,22 +27,23 @@ public class RatesProvider {
         return apiClient.getLatestRates(exchanged.getCurrencyCode()).get(requested.getCurrencyCode());
     }
 
-    public Map<DateTime, Double> getExchangeRateListInEUR(Currency requested, DateTime start_at,
-        DateTime end_at) {
+    public Map<DateTime, Double> getExchangeRateListInEUR(Currency requested, DateTime startAt,
+        DateTime endAt) {
         List<ExchangeRates> exchangeRateses;
 
         try {
-            exchangeRateses = apiClient.getHistoricalRates(start_at, end_at);
+            exchangeRateses = apiClient.getHistoricalRates(startAt, endAt);
         } catch (IllegalArgumentException e) {
             throw new CurrencyNotSupportedException(
                 "Currency " + requested.getCurrencyCode()
                     + " is not supported, or or incorrect date range");
         }
 
-        return exchangeRateses.stream().collect(Collectors
-            .toMap(ExchangeRates::getDate,
-                exchangeRates -> exchangeRates.get(requested.getCurrencyCode()),
-                (a, b) -> b,
-                TreeMap::new));
+        TreeMap<DateTime, Double> map = exchangeRateses.stream()
+            .collect(Collectors
+                .toMap(ExchangeRates::getDate,
+                    exchangeRates -> exchangeRates.get(requested.getCurrencyCode()), (a, b) -> b,
+                    TreeMap::new));
+        return map;
     }
 }
