@@ -1,5 +1,6 @@
 package com.exchange.app;
 
+import java.util.HashMap;
 import org.joda.time.DateTime;
 
 import java.util.Map;
@@ -21,6 +22,39 @@ public class ExchangeRates {
 
     public DateTime getDate() {
         return date;
+    }
+
+    static class RatesForCurrencyForDayBuilder {
+        private String currency;
+        private Map<String, Double> rates;
+        private DateTime date;
+
+        public RatesForCurrencyForDayBuilder based(String currency) {
+            this.currency = currency;
+            return this;
+        }
+
+        public RatesForCurrencyForDayBuilder addRate(String foreignCurrency, Double rate) {
+            if (rates == null) {
+                rates = new HashMap<>();
+            }
+            if (currency != null && !currency.equals(foreignCurrency)) {
+                rates.put(foreignCurrency, rate);
+            }
+            return this;
+        }
+
+        public RatesForCurrencyForDayBuilder forDay(DateTime date) {
+            this.date = date;
+            return this;
+        }
+
+        public ExchangeRates build() {
+            if (date == null) {
+                this.date = DateTime.now();
+            }
+            return new ExchangeRates(currency, date, rates);
+        }
     }
 }
 
