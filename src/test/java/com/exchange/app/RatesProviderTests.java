@@ -20,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 class RatesProviderTests {
@@ -81,21 +80,17 @@ class RatesProviderTests {
         //given
         ForeignExchangeRatesApiClient apiClient = Mockito.mock(ForeignExchangeRatesApiClient.class);
         ExchangeRates exchangeRates = initializeExchangeRates();
-        List<String> currencies = Arrays.asList(new String[]{EUR, SEK, USD});
+        List<String> currencies = Arrays.asList(EUR, SEK, USD);
 
         Mockito.when(apiClient.getLatestRates(anyString())).thenAnswer(
-                new Answer<ExchangeRates>() {
-
-                    @Override
-                    public ExchangeRates answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        Object base = invocationOnMock.getArgument(0);
-                        if (currencies.contains(base)) {
-                            return exchangeRates;
-                        } else {
-                            throw new CurrencyNotSupportedException("Not supported: " + base);
-                        }
-                    }
+            (Answer<ExchangeRates>) invocationOnMock -> {
+                Object base = invocationOnMock.getArgument(0);
+                if (currencies.contains(base)) {
+                    return exchangeRates;
+                } else {
+                    throw new CurrencyNotSupportedException("Not supported: " + base);
                 }
+            }
         );
 
         RatesProvider provider = new RatesProvider(apiClient);
@@ -175,8 +170,17 @@ class RatesProviderTests {
 
         //then
         assertThat(rates.size()).isEqualTo(6);
-        assertThat(rates.containsKey(DateTime.now().minusDays(5).withTimeAtStartOfDay())).isTrue();
-        assertThat(rates.get(DateTime.now().minusDays(2).withTimeAtStartOfDay())).isEqualTo(14.19);
+        assertThat(thePriceFrom5DaysAgoIsDefined(rates)).isTrue();
+        assertThat(thePriceFrom2DaysAgo(rates)).isEqualTo(14.19);
+    }
+
+    private boolean thePriceFrom5DaysAgoIsDefined(
+        Map<DateTime, Double> rates) {
+        return rates.containsKey(DateTime.now().minusDays(5).withTimeAtStartOfDay());
+    }
+
+    private double thePriceFrom2DaysAgo(Map<DateTime, Double> rates) {
+        return rates.get(DateTime.now().minusDays(2).withTimeAtStartOfDay());
     }
 
     private List<ExchangeRates> prepareTestData() {
@@ -210,50 +214,12 @@ class RatesProviderTests {
     private ExchangeRates initializeExchangeRates() {
         rates.put(USD, 1.22);
         rates.put(SEK, 10.30);
-        return initializeExchangeRates(EUR, DateTime.now(), rates);
+        return initializeExchangeRates(DateTime.now(), rates);
     }
 
-    private ExchangeRates initializeExchangeRates(String base, DateTime date,
+    private ExchangeRates initializeExchangeRates(DateTime date,
         Map<String, Double> rates) {
-        return new ExchangeRates(base, date, rates);
-    }
-
-    private List<ExchangeRates> initializeRatesForCurrenciesFotDayBeforeToday(int dayBefore) {
-        return new ArrayList<ExchangeRates>() {{
-            add(new RatesForCurrencyForDayBuilder().basedUSD()
-                .forDay(dayBefore).addRate(EUR, 0.85).addRate(SEK, 12.37).build());
-            add(new RatesForCurrencyForDayBuilder().basedSEK()
-                .forDay(dayBefore)
-                .addRate(USD, 0.12)
-                .addRate(EUR, 0.95)
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(dayBefore)
-                .addRate(USD, 1.13)
-                .addRate(SEK, 14.19)
-                .build());
-        }};
-    }
-
-    private List<ExchangeRates> initializeRatesForCurrenciesFotDayBeforeTodayWithRandomRates(
-        int dayBefore) {
-        return new ArrayList<ExchangeRates>() {{
-            add(new RatesForCurrencyForDayBuilder().basedUSD()
-                .forDay(dayBefore)
-                .addRate(EUR, ranCurr(0.8, 0.99))
-                .addRate(SEK, ranCurr(12.1, 12.99))
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedSEK()
-                .forDay(dayBefore)
-                .addRate(USD, ranCurr(0.11, 0.13))
-                .addRate(EUR, ranCurr(0.6, 0.79))
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(dayBefore)
-                .addRate(USD, ranCurr(0.14, 0.16))
-                .addRate(SEK, ranCurr(13.1, 14.99))
-                .build());
-        }};
+        return new ExchangeRates(RatesProviderTests.EUR, date, rates);
     }
 
     private static class RatesForCurrencyForDayBuilder {
@@ -261,23 +227,8 @@ class RatesProviderTests {
         private Map<String, Double> rates;
         private DateTime date;
 
-        public RatesForCurrencyForDayBuilder basedUSD() {
-            currency = USD;
-            return this;
-        }
-
-        public RatesForCurrencyForDayBuilder basedSEK() {
-            currency = SEK;
-            return this;
-        }
-
         public RatesForCurrencyForDayBuilder basedEUR() {
             currency = EUR;
-            return this;
-        }
-
-        public RatesForCurrencyForDayBuilder based(String currency) {
-            this.currency = currency;
             return this;
         }
 
@@ -303,11 +254,6 @@ class RatesProviderTests {
                 dateTime = dateTime.minusDays(-day);
             }
             date = dateTime;
-            return this;
-        }
-
-        public RatesForCurrencyForDayBuilder forDay(DateTime date) {
-            this.date = date;
             return this;
         }
 
