@@ -70,8 +70,8 @@ class RatesProviderTests {
 
         //then
         assertAll(
-                () -> assertEquals(exchangeRates.get(USD), rateUSD, "USD rate should be included"),
-                () -> assertEquals(exchangeRates.get(SEK), rateSEK, "SEK rate should be included")
+            () -> assertEquals(exchangeRates.get(USD), rateUSD, "USD rate should be included"),
+            () -> assertEquals(exchangeRates.get(SEK), rateSEK, "SEK rate should be included")
         );
     }
 
@@ -96,7 +96,8 @@ class RatesProviderTests {
         RatesProvider provider = new RatesProvider(apiClient);
 
         //when
-        Double rate = provider.getExchangeRate(Currency.getInstance(SEK), Currency.getInstance(USD));
+        Double rate = provider
+            .getExchangeRate(Currency.getInstance(SEK), Currency.getInstance(USD));
 
         //then
         assertThat(10.30).isEqualTo(rate);
@@ -113,8 +114,8 @@ class RatesProviderTests {
         //then
 
         CurrencyNotSupportedException actual =
-                assertThrows(CurrencyNotSupportedException.class,
-                        () -> provider.getExchangeRateInEUR(Currency.getInstance("CHF")));
+            assertThrows(CurrencyNotSupportedException.class,
+                () -> provider.getExchangeRateInEUR(Currency.getInstance("CHF")));
 
         assertEquals("Currency is not supported: CHF", actual.getMessage());
     }
@@ -184,32 +185,30 @@ class RatesProviderTests {
     }
 
     private List<ExchangeRates> prepareTestData() {
-        return new ArrayList<ExchangeRates>() {{
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(0).addRate(USD, ranCurr(0.14, 0.16)).addRate(SEK, ranCurr(13.1, 14.99))
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(-1).addRate(USD, ranCurr(0.14, 0.16)).addRate(SEK, ranCurr(13.1, 14.99))
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(-2).addRate(USD, 1.13).addRate(SEK, 14.19).build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(-3).addRate(USD, ranCurr(0.14, 0.16)).addRate(SEK, ranCurr(13.1, 14.99))
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(-4).addRate(USD, ranCurr(0.14, 0.16)).addRate(SEK, ranCurr(13.1, 14.99))
-                .build());
-            add(new RatesForCurrencyForDayBuilder().basedEUR()
-                .forDay(-5).addRate(USD, ranCurr(0.14, 0.16)).addRate(SEK, ranCurr(13.1, 14.99))
-                .build());
-        }};
-    }
+        return new ArrayList<ExchangeRates>() {
+            {
+                add(prepareRandomDataForDay(0));
+                add(prepareRandomDataForDay(-1));
+                add(new RatesForCurrencyForDayBuilder().basedEUR()
+                    .forDay(-2).addRate(USD, 1.13).addRate(SEK, 14.19).build());
+                add(prepareRandomDataForDay(-3));
+                add(prepareRandomDataForDay(-4));
+                add(prepareRandomDataForDay(-5));
+            }
 
-    private double ranCurr(double min, double max) {
-        Random r = new Random();
-        return min + (max - min) * r.nextDouble();
+            private ExchangeRates prepareRandomDataForDay(int day) {
+                return new RatesForCurrencyForDayBuilder().basedEUR()
+                    .forDay(day).addRate(USD, randomDouble())
+                    .addRate(SEK, randomDouble())
+                    .build();
+            }
+
+            private double randomDouble() {
+                Random r = new Random();
+                return r.nextDouble();
+            }
+        };
     }
-//    ====
 
     private ExchangeRates initializeExchangeRates() {
         rates.put(USD, 1.22);
@@ -223,6 +222,7 @@ class RatesProviderTests {
     }
 
     private static class RatesForCurrencyForDayBuilder {
+
         private String currency;
         private Map<String, Double> rates;
         private DateTime date;
